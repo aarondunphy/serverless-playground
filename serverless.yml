@@ -1,0 +1,50 @@
+org: aarondunphy
+app: serverless-playground
+service: serverless-playground
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  deploymentMethod: direct
+  environment:
+    DYNAMODB_USERS_TABLE: ${self:service}-myUsersTable-${sls:stage}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:PutItem"
+            - "dynamodb:Get*"
+            - "dynamodb:Scan*"
+            - "dynamodb:UpdateItem"
+            - "dynamodb:DeleteItem"
+          Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-myUsersTable-${sls:stage}
+
+functions:
+  function1:
+    handler: index.handler
+    events:
+      - httpApi: "POST /hello"
+  createUser:
+    handler: createUser.handler
+    events:
+      - httpApi: "POST /user"
+  getUsers:
+    handler: getUsers.handler
+    events:
+      - httpApi: "GET /users"
+
+resources:
+  Resources:
+    Users:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: primary_key
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: primary_key
+            KeyType: HASH
+        TableName: ${self:service}-myUsersTable-${sls:stage}
